@@ -1,3 +1,7 @@
+import os
+import pymysql
+pymysql.install_as_MySQLdb()
+
 """
 Django settings for mysite project.
 
@@ -10,7 +14,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
-import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,7 +28,7 @@ SECRET_KEY = 'rz1(43&qo4fl9cd$@^^_^exm(lnb$@71fqxo)nx^&6mui!^pje'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', '.pythonanywhere.com']
 
 
 # Application definition
@@ -37,6 +40,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+]
+
+INSTALLED_APPS += [
+    'contentsPosts',
+    'placePosts',
+    'rentals',
+    'reservations',
+    'accounts',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -78,9 +89,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'modus_db',
-        'USER': 'modus123',
+        'USER': 'root',
         'PASSWORD': '1233',
-        'HOST': 'localhost'
+        'HOST': 'localhost',
         'PORT': '3306'
     }
 }
@@ -110,7 +121,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
@@ -123,3 +134,5 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
 STATIC_URL = '/static/'
+
+AUTH_USER_MODEL = 'accounts.Users'
