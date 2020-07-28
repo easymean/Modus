@@ -1,5 +1,4 @@
 import json
-import bcrypt
 import jwt
 
 from .models import Users
@@ -16,6 +15,16 @@ class BaseView(View):
     @staticmethod
     def response(data={}, message="", status=200):
         result = {
+            'data': data,
+            'message': message,
+        }
+
+        return JsonResponse(result, status=status)
+
+    @staticmethod
+    def list_response(num=0, data={}, message="", status=200):
+        result = {
+            'num': num,
             'data': data,
             'message': message,
         }
@@ -47,10 +56,8 @@ class UserView(BaseView):
                 raise ValueError('이미 존재하는 이메일입니다.')
 
             nickname = data['nickname']
-            hased_password = bcrypt.hashpw(data['password'].encode(
-                'utf-8'), bcrypt.gensalt()).decode('utf-8')
             user = Users.objects.create_user(
-                email=email, password=hased_password, nickname=nickname)
+                email=email, password=password, nickname=nickname)
 
             return self.response({'id': user.pk, 'email': user.email}, 'success', 200)
 
@@ -59,16 +66,15 @@ class UserView(BaseView):
 
     def get(self, request, id):
         try:
-            user = Users.objects.get(pk=id)
+            user = Users.objects.get(pk=id, is_active=True)
         except ObjectDoesNotExist:
             return self.response({}, "%d에 해당하는 유저가 존재하지 않습니다" % id, 400)
 
         return self.response({'id': user.pk, 'email': user.email}, 'success', 200)
 
     def put(self, request, id):
-        try:
-            user = Users.objects.get(pk=id)
-        except ObjectDoesNotExist:
+        user = Users.objects.filter(pk=id, is_active=True)
+        if not user:
             return self.response({}, '%d에 해당하는 유저가 존재하지 않습니다' % id, 400)
 
         data = json.loads(request.body)
@@ -78,9 +84,8 @@ class UserView(BaseView):
         return self.response(new_user, 'success', 200)
 
     def delete(self, request, id):
-        try:
-            user = Users.objects.get(pk=id)
-        except ObjectDoesNotExist:
+        user = Users.objects.filter(pk=id, is_active=True)
+        if not user:
             return self.response({}, '%d에 해당하는 유저가 존재하지 않습니다' % id, 400)
 
         user.update(is_active=False)
