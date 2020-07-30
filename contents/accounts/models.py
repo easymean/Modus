@@ -56,6 +56,10 @@ class Users(AbstractBaseUser, PermissionsMixin):
     is_admin = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
 
+    sns_type = models.CharField(max_length=45, default="", blank=True)
+    sns_id = models.CharField(max_length=45, default="", blank=True)
+    sns_connect_date = models.CharField(max_length=45, default="", blank=True)
+
     USERNAME_FIELD = 'email'  # email을 id로 사용합니다.
     REQUIRED_FIELDS = []
 
