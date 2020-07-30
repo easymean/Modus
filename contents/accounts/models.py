@@ -67,11 +67,12 @@ class Users(AbstractBaseUser, PermissionsMixin):
 
     def set_password(self, raw_password):
         hashed_password = bcrypt.hashpw(
-            raw_password.encode('utf-8'),  bcrypt.gensalt())
-        self.password = hashed_password
+            raw_password.encode('utf-8'), bcrypt.gensalt())
+        self.password = hashed_password.decode('utf-8')
 
-    def check_password(self, hashed_password, input_password):
-        if bcrypt.checkpw(input_password.encode('utf-8'), hashed_password):
+    @staticmethod
+    def check_password(hashed_password, input_password):
+        if bcrypt.checkpw(input_password.encode('utf-8'), hashed_password.encode('utf-8')):
             return True
         else:
             return False
