@@ -12,7 +12,6 @@ def login_required(func):
         try:
             cookie_str = request.headers.get('Cookie')
             token_str = cookie_str.split('=')[1]
-            print(token_str)
 
             user_info = jwt.decode(token_str, SECRET_KEY, ALGORITHM)
             user_nickname = user_info['nickname']
