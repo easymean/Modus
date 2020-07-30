@@ -1,6 +1,6 @@
 import os
-import pymysql
-pymysql.install_as_MySQLdb()
+# import pymysql
+# pymysql.install_as_MySQLdb()
 
 """
 Django settings for mysite project.
@@ -24,11 +24,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'rz1(43&qo4fl9cd$@^^_^exm(lnb$@71fqxo)nx^&6mui!^pje'
-
+SECRET_DIR = os.path.dirname(os.path.abspath(__file__))
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True  # True면 개발모드 False면 배포 모드
 
-ALLOWED_HOSTS = ['127.0.0.1', '.pythonanywhere.com']
+ALLOWED_HOSTS = ['127.0.0.1', '.pythonanywhere.com', 'localhost']
 
 
 # Application definition
@@ -48,6 +48,7 @@ INSTALLED_APPS += [
     'rentals',
     'reservations',
     'accounts',
+    'login'
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -56,12 +57,13 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    # 'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+MIDDLEWARE = MIDDLEWARE_CLASSES
 
-ROOT_URLCONF = 'mysite.urls'
+ROOT_URLCONF = 'contents.urls'
 
 TEMPLATES = [
     {
@@ -79,7 +81,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'mysite.wsgi.application'
+#WSGI_APPLICATION = 'contents.wsgi.application'
 
 
 # Database
@@ -88,11 +90,15 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'modus_db',
-        'USER': 'root',
-        'PASSWORD': '1233',
-        'HOST': 'localhost',
-        'PORT': '3306'
+        'OPTIONS': {
+            'read_default_file': os.path.join(SECRET_DIR, 'mysql.cnf'),
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"  # strict mode 설정 추가
+        }
+        # 'NAME': 'modus_db',
+        # 'USER': 'root',
+        # 'PASSWORD': '1233',
+        # 'HOST': 'localhost',
+        # 'PORT': '3306'
     }
 }
 
@@ -119,7 +125,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/1.9/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ko-kr'
 
 TIME_ZONE = 'Asia/Seoul'
 
