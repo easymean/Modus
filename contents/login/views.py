@@ -9,7 +9,7 @@ from django.shortcuts import redirect
 from utils.common_views import BaseView, give_JWT
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from utils.my_settings import KAKAO_KEY
+from utils.my_settings import KAKAO_KEY, NAVER_KEY, NAVER_SECRET
 
 # Create your views here.
 
@@ -63,13 +63,18 @@ class LogoutView(BaseView):
 # front-end: 1. 클라이언트 서버가 사용자에게 인증 페이지를 제공합니다.
 
 
-class KakaoLoginView(BaseView):
+class SocialLoginView(BaseView):
     def get(self, request, sns_type):
-        client_id = KAKAO_KEY
-        redirect_uri = f"http://127.0.0.1:8000/auth/login/{sns_type}"
-        return redirect(
-            f"https://kauth.kakao.com/oauth/authorize?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code"
-        )
+        if sns_type == 'kakao':
+            client_id = KAKAO_KEY
+            redirect_uri = f"http://127.0.0.1:8000/auth/login/{sns_type}"
+            return redirect(f"https://kauth.kakao.com/oauth/authorize?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code")
+
+        if sns_type == 'naver':
+            client_id = NAVER_KEY
+            redirect_uri = f"http://127.0.0.1:8000/auth/login/{sns_type}"
+            state_string = redirect_uri.encode('utf-8')
+            return redirect(f"https://nid.naver.com/oauth2.0/authorize?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&state={state_string}")
 
 
 class SocialLoginCallbackView(BaseView):
@@ -78,42 +83,70 @@ class SocialLoginCallbackView(BaseView):
         try:
             # 2. 인증 완료후 소셜 로그인 페이지에서 권한 증서(code grant)를 받아옵니다.
             code = request.GET.get('code')
-        # if sns_type == 'naver':
+
         # if sns_type == 'google':
 
             if sns_type == 'kakao':
                 client_id = KAKAO_KEY
                 redirect_uri = f'http://127.0.0.1:8000/auth/login/{sns_type}'
+                # 3. 토큰을 얻기 위해 outh 서버에 권한증서(code grant)를 전달합니다.
+                token_request = requests.get(
+                    f"https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id={client_id}&redirect_uri={redirect_uri}&code={code}")
 
-               # 3. 토큰을 얻기 위해 outh 서버에 권한증서(code grant)를 전달합니다.
-            token_request = requests.get(
-                f"https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id={client_id}&redirect_uri={redirect_uri}&code={code}")
+                token_json = token_request.json()
 
-            token_json = token_request.json()
-            print(token_json)
-            error = token_json.get("error", None)
+                error = token_json.get("error", None)
+                if error is not None:
+                    self.response(message='INVALID_CODE', status=400)
 
-            if error is not None:
-                self.response(message='INVALID_CODE', status=400)
+                try:
+                    access_token = token_json.get('access_token')
 
-            access_token = token_json.get('access_token')
+                    # 4. oauth 서버에서 유저 정보(token and profile)를 받아옵니다.
+                    sns_info_request = requests.get(
+                        "https://kapi.kakao.com/v2/user/me", headers={"Authorization": f"Bearer {access_token}"})
+                    sns_info_json = sns_info_request.json()
+                    sns_id = sns_info_json.get('id')
 
-            # 4. oauth 서버에서 유저 정보(token and profile)를 받아옵니다.
-            sns_info_request = requests.get("https://kapi.kakao.com/v2/user/me", headers={"Authorization": f"Bearer {access_token}"},
-                                            )
+                    kakao_account = sns_info_json.get('kakao_account')
+                    email = kakao_account.get('email')
+                    kakao_profile = kakao_account.get('profile')
+                    nickname = kakao_profile.get('nickname')
 
-            sns_info_json = sns_info_request.json()
+                except KeyError:
+                    self.response(message='INVALID_TOKEN', status=400)
 
-            sns_id = sns_info_json.get('id')
+            if sns_type == 'naver':
+                client_id = NAVER_KEY
+                client_secret = NAVER_SECRET
+                token_request = requests.get(
+                    f"https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&client_id={client_id}&client_secret={client_secret}&code={code}")
 
-            kakao_account = sns_info_json.get('kakao_account')
-            email = kakao_account.get('email')
+                token_json = token_request.json()
 
-            kakao_profile = kakao_account.get('profile')
-            nickname = kakao_profile.get('nickname')
+                error = token_json.get("error", None)
+                if error is not None:
+                    self.response(message='INVALID_CODE', status=400)
+
+                try:
+                    access_token = token_json.get('access_token')
+
+                    # 4. oauth 서버에서 유저 정보(token and profile)를 받아옵니다.
+                    sns_info_request = requests.get(
+                        "https://openapi.naver.com/v1/nid/me", headers={"Authorization": f"Bearer {access_token}"})
+                    sns_info_json = sns_info_request.json()
+                    sns_info = sns_info_json.get('response')
+                    sns_id = sns_info.get('id')
+
+                    email = sns_info.get('email')
+
+                    nickname = sns_info.get('nickname')
+
+                except KeyError:
+                    self.response(message='INVALID_TOKEN', status=400)
 
         except KeyError:
-            self.response(message='INVALID_TOKEN', status=400)
+            self.response(message='INVALID_CODE', status=400)
         # except access_token.DoesNotExist:
         #     self.response(message='INVALID_TOKEN', status=400)
 
