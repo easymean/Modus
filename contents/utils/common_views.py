@@ -1,5 +1,9 @@
+import jwt
+import datetime
+
 from django.http import JsonResponse
 from django.views.generic import View
+from utils.my_settings import SECRET_KEY, ALGORITHM
 
 
 class BaseView(View):
@@ -21,3 +25,13 @@ class BaseView(View):
         }
 
         return JsonResponse(result, status=status)
+
+
+def give_JWT(user_id, nickname):
+    payload = {'id': user_id,
+               'nickname': nickname,
+               'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)}
+    access_token = jwt.encode(
+        payload=payload, key=SECRET_KEY, algorithm=ALGORITHM)
+    access_token = access_token.decode('utf-8')
+    return access_token
