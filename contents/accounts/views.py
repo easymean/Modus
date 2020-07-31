@@ -16,10 +16,6 @@ from django.core.exceptions import ObjectDoesNotExist
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UserView(BaseView):
-    # @method_decorator(csrf_exempt)
-    # def dispatch(self, request, *args, **kwargs):
-    #     return super(UserView, self).dispatch(request, *args, **kwargs)
-
     def post(self, request):
         data = json.loads(request.body)
 
@@ -64,12 +60,12 @@ class UserView(BaseView):
     def get(self, request, id):
         request_id = request.user.pk
         if request_id != id:
-            return self.response(message='접근권한이 없습니다.', status=400)
+            return self.response(message='INVALID ACCESS', status=400)
 
         try:
             user = Users.objects.get(pk=id, is_active=True)
         except ObjectDoesNotExist:
-            return self.response(message='%d번 유저가 존재하지 않습니다.' % id, status=400)
+            return self.response(message=f"{id}번 유저가 존재하지 않습니다.", status=400)
 
         return self.response({'id': user.pk, 'email': user.email}, 'success', 200)
 
@@ -77,7 +73,7 @@ class UserView(BaseView):
     def put(self, request, id):
         user = Users.objects.filter(pk=id, is_active=True)
         if not user:
-            return self.response(message='%d번 유저가 존재하지 않습니다.' % id, status=400)
+            return self.response(message=f"{id}번 유저가 존재하지 않습니다.", status=400)
 
         data = json.loads(request.body)
         new_user = user.update(data)
@@ -88,7 +84,7 @@ class UserView(BaseView):
     def delete(self, request, id):
         user = Users.objects.filter(pk=id, is_active=True)
         if not user:
-            return self.response(message='%d번 유저가 존재하지 않습니다.' % id, status=400)
+            return self.response(message=f"{id}번 유저가 존재하지 않습니다.", status=400)
 
         user.update(is_active=False)
         return self.response(message='success', status=200)
