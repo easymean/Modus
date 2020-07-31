@@ -9,7 +9,7 @@ from django.shortcuts import redirect
 from utils.common_views import BaseView, give_JWT
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from utils.my_settings import KAKAO_KEY, NAVER_KEY, NAVER_SECRET
+from my_settings import KAKAO_KEY, NAVER_KEY, NAVER_SECRET
 
 # Create your views here.
 
@@ -152,7 +152,7 @@ class SocialLoginCallbackView(BaseView):
         # 5-1. 회원이라면 일반적인 로그인과정을 진행합니다.
         if Users.objects.filter(sns_type=sns_type, sns_id=sns_id).exists():
             user = Users.objects.get(sns_type=sns_type, sns_id=sns_id)
-            access_token = give_JWT(user_id=sns_id, nickname=nickname)
+            access_token = give_JWT(user_id=user.pk, nickname=nickname)
 
             res = JsonResponse({'data': {'id': user.pk,
                                          'email': user.email}}, status=200)
@@ -166,7 +166,7 @@ class SocialLoginCallbackView(BaseView):
                 sns_id=sns_id,
                 sns_connect_date=datetime.datetime.now())
             user.save()
-            access_token = give_JWT(user_id=sns_id, nickname=nickname)
+            access_token = give_JWT(user_id=user.pk, nickname=nickname)
 
             res = JsonResponse({'data': {'id': user.pk,
                                          'email': user.email}}, status=200)

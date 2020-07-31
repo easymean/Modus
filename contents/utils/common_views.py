@@ -3,7 +3,7 @@ import datetime
 
 from django.http import JsonResponse
 from django.views.generic import View
-from utils.my_settings import SECRET_KEY, ALGORITHM
+from my_settings import SECRET_KEY, ALGORITHM
 
 
 class BaseView(View):
