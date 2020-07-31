@@ -5,12 +5,13 @@ from accounts.models import Users
 from .common_views import BaseView
 from my_settings import SECRET_KEY, ALGORITHM
 from django.core.exceptions import ObjectDoesNotExist
+from login.auth.token import get_token
 
 
 def login_required(func):
     def wrapper(self, request, *args, **kwargs):
         try:
-            token_str = request.COOKIES.get('access_token')
+            token_str = get_token(request)
 
             user_info = jwt.decode(token_str, SECRET_KEY, ALGORITHM)
             user_nickname = user_info['nickname']

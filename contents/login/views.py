@@ -6,10 +6,12 @@ import requests
 from accounts.models import Users
 from django.http import JsonResponse
 from django.shortcuts import redirect
-from utils.common_views import BaseView, give_JWT
+from utils.common_views import BaseView
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from my_settings import KAKAO_KEY, NAVER_KEY, NAVER_SECRET
+from .auth.oauth import NaverClient, KakaoClient
+from .auth.token import generate_token, set_token, get_token
 
 # Create your views here.
 
@@ -43,13 +45,12 @@ class LoginView(BaseView):
         except KeyError:
             return self.response({}, "INVALID_KEY", 400)
 
-        access_token = give_JWT(user_id=user.pk, nickname=user.nickname)
+        access_token = generate_token(user_id=user.pk, nickname=user.nickname)
 
-        res = JsonResponse({'data': {'id': user.pk,
-                                     'email': user.email}}, status=200)
-
-        res.set_cookie('access_token', access_token)
-        return res
+        response = JsonResponse({'data': {'id': user.pk,
+                                          'email': user.email}}, status=200)
+        response = set_token(response, access_token)
+        return response
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -65,37 +66,30 @@ class LogoutView(BaseView):
 
 class SocialLoginView(BaseView):
     def get(self, request, sns_type):
+        naver = NaverClient()
+        kakao = KakaoClient()
         if sns_type == 'kakao':
-            client_id = KAKAO_KEY
-            redirect_uri = f"http://127.0.0.1:8000/auth/login/{sns_type}"
-            return redirect(f"https://kauth.kakao.com/oauth/authorize?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code")
+            redirect_url = kakao.get_redirect_url()
+            return redirect(redirect_url)
 
         if sns_type == 'naver':
-            client_id = NAVER_KEY
-            redirect_uri = f"http://127.0.0.1:8000/auth/login/{sns_type}"
-            state_string = redirect_uri.encode('utf-8')
-            return redirect(f"https://nid.naver.com/oauth2.0/authorize?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&state={state_string}")
+            redirect_url = naver.get_redirect_url()
+            return redirect(redirect_url)
 
 
 class SocialLoginCallbackView(BaseView):
+
     def get(self, request, sns_type):
+        naver = NaverClient()
+        kakao = KakaoClient()
 
         try:
             # 2. 인증 완료후 소셜 로그인 페이지에서 권한 증서(code grant)를 받아옵니다.
             code = request.GET.get('code')
 
-        # if sns_type == 'google':
-
             if sns_type == 'kakao':
-                client_id = KAKAO_KEY
-                redirect_uri = f'http://127.0.0.1:8000/auth/login/{sns_type}'
-                # 3. 토큰을 얻기 위해 outh 서버에 권한증서(code grant)를 전달합니다.
-                token_request = requests.get(
-                    f"https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id={client_id}&redirect_uri={redirect_uri}&code={code}")
-
-                token_json = token_request.json()
-
-                error = token_json.get("error", None)
+                token_json = kakao.get_access_token(code)
+                error = token_json.get('error', None)
                 if error is not None:
                     self.response(message='INVALID_CODE', status=400)
 
@@ -103,9 +97,9 @@ class SocialLoginCallbackView(BaseView):
                     access_token = token_json.get('access_token')
 
                     # 4. oauth 서버에서 유저 정보(token and profile)를 받아옵니다.
-                    sns_info_request = requests.get(
-                        "https://kapi.kakao.com/v2/user/me", headers={"Authorization": f"Bearer {access_token}"})
-                    sns_info_json = sns_info_request.json()
+                    sns_info_json = kakao.get_profile(
+                        access_token=access_token)
+
                     sns_id = sns_info_json.get('id')
 
                     kakao_account = sns_info_json.get('kakao_account')
@@ -114,16 +108,10 @@ class SocialLoginCallbackView(BaseView):
                     nickname = kakao_profile.get('nickname')
 
                 except KeyError:
-                    self.response(message='INVALID_TOKEN', status=400)
+                    self.response(message='INVALIDd_TOKEN', status=400)
 
             if sns_type == 'naver':
-                client_id = NAVER_KEY
-                client_secret = NAVER_SECRET
-                token_request = requests.get(
-                    f"https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&client_id={client_id}&client_secret={client_secret}&code={code}")
-
-                token_json = token_request.json()
-
+                token_json = naver.get_access_token(code)
                 error = token_json.get("error", None)
                 if error is not None:
                     self.response(message='INVALID_CODE', status=400)
@@ -132,15 +120,14 @@ class SocialLoginCallbackView(BaseView):
                     access_token = token_json.get('access_token')
 
                     # 4. oauth 서버에서 유저 정보(token and profile)를 받아옵니다.
-                    sns_info_request = requests.get(
-                        "https://openapi.naver.com/v1/nid/me", headers={"Authorization": f"Bearer {access_token}"})
-                    sns_info_json = sns_info_request.json()
-                    sns_info = sns_info_json.get('response')
-                    sns_id = sns_info.get('id')
+                    sns_response = naver.get_profile(access_token=access_token)
 
-                    email = sns_info.get('email')
+                    if not sns_response[0]:
+                        return self.response(message='유저 정보 받아오는데 실패했습니다.', status=400)
 
-                    nickname = sns_info.get('nickname')
+                    sns_id = sns_response[1].get('id')
+                    email = sns_response[1].get('email')
+                    nickname = sns_response[1].get('nickname')
 
                 except KeyError:
                     self.response(message='INVALID_TOKEN', status=400)
@@ -152,12 +139,6 @@ class SocialLoginCallbackView(BaseView):
         # 5-1. 회원이라면 일반적인 로그인과정을 진행합니다.
         if Users.objects.filter(sns_type=sns_type, sns_id=sns_id).exists():
             user = Users.objects.get(sns_type=sns_type, sns_id=sns_id)
-            access_token = give_JWT(user_id=user.pk, nickname=nickname)
-
-            res = JsonResponse({'data': {'id': user.pk,
-                                         'email': user.email}}, status=200)
-            res.set_cookie('access_token', access_token)
-            return res
         else:  # 5-2. 회원이 아니라면 회원가입을 진행합니다.
             user = Users(
                 sns_type=sns_type,
@@ -166,9 +147,11 @@ class SocialLoginCallbackView(BaseView):
                 sns_id=sns_id,
                 sns_connect_date=datetime.datetime.now())
             user.save()
-            access_token = give_JWT(user_id=user.pk, nickname=nickname)
 
-            res = JsonResponse({'data': {'id': user.pk,
-                                         'email': user.email}}, status=200)
-            res.set_cookie('access_token', access_token)
-            return res
+        access_token = generate_token(
+            user_id=user.pk, nickname=user.nickname)
+
+        response = JsonResponse({'data': {'id': user.pk,
+                                          'email': user.email}}, status=200)
+        response = set_token(response, access_token)
+        return response
