@@ -147,8 +147,6 @@ class SocialLoginCallbackView(BaseView):
 
         except KeyError:
             self.response(message='INVALID_CODE', status=400)
-        # except access_token.DoesNotExist:
-        #     self.response(message='INVALID_TOKEN', status=400)
 
         # back-end: 5. 서버가 db에 고유 id를 보내서 회원을 인증합니다.
         # 5-1. 회원이라면 일반적인 로그인과정을 진행합니다.
