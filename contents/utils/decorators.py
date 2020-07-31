@@ -2,7 +2,7 @@ import json
 import jwt
 
 from accounts.models import Users
-from .response_views import BaseView
+from .common_views import BaseView
 from .my_settings import SECRET_KEY, ALGORITHM
 from django.core.exceptions import ObjectDoesNotExist
 
