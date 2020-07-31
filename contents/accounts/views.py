@@ -4,7 +4,7 @@ from .models import Users
 from django.db import IntegrityError
 from django.http import JsonResponse
 from django.views.generic import View
-from utils.response_views import BaseView
+from utils.common_views import BaseView
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.core.validators import validate_email, ValidationError
