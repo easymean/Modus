@@ -1,0 +1,14 @@
+<!-- templates/accounts/activation_email.html-->
+
+{% autoescape off %}
+<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div>
+      <a href="http://{{ domain }}{% url 'activate' uid64=uid token=token %}">
+        인증하기
+      </a>
+    </div>
+  </body>
+</html>
+{% endautoescape %}

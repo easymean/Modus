@@ -1,4 +1,5 @@
 import os
+import my_settings
 # import pymysql
 # pymysql.install_as_MySQLdb()
 
@@ -17,7 +18,7 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
@@ -75,7 +76,9 @@ ROOT_URLCONF = 'contents.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            TEMPLATE_DIR,
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -149,3 +152,11 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 AUTH_USER_MODEL = 'accounts.Users'
+
+EMAIL_BACKEND = my_settings.EMAIL['EMAIL_BACKEND']
+EMAIL_USE_TLS = my_settings.EMAIL['EMAIL_USE_TLS']
+EMAIL_PORT = my_settings.EMAIL['EMAIL_PORT']
+EMAIL_HOST = my_settings.EMAIL['EMAIL_HOST']
+EMAIL_HOST_USER = my_settings.EMAIL['EMAIL_HOST_USER']
+EMAIL_HOST_PASSWORD = my_settings.EMAIL['EMAIL_HOST_PASSWORD']
+DEFAULT_FROM_MAIL = my_settings.EMAIL['DEFAULT_FROM_MAIL']
