@@ -1,19 +1,16 @@
 import jwt
 import json
 import datetime
-import requests
 
 from accounts.models import Users
-from django.http import JsonResponse
-from django.shortcuts import redirect
 from utils.common_views import BaseView
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-from my_settings import KAKAO_KEY, NAVER_KEY, NAVER_SECRET
 from .auth.oauth import NaverClient, KakaoClient
 from .auth.token import generate_token, set_token, get_token
 
-# Create your views here.
+from django.http import JsonResponse
+from django.shortcuts import redirect
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -56,9 +53,8 @@ class LoginView(BaseView):
 @method_decorator(csrf_exempt, name='dispatch')
 class LogoutView(BaseView):
     def post(self, request):
-        reset = ''
         res = JsonResponse({'message': '로그아웃되었습니다.'}, status=200)
-        res.set_cookie('access_token', reset)
+        res.delete_cookie('access_token')
         return res
 
 # front-end: 1. 클라이언트 서버가 사용자에게 인증 페이지를 제공합니다.

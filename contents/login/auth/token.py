@@ -1,7 +1,11 @@
 import jwt
 import datetime
 
+from accounts.models import Users
 from my_settings import SECRET_KEY, ALGORITHM
+
+from django.http import JsonResponse
+from django.core.exceptions import ObjectDoesNotExist
 
 
 def generate_token(user_id, nickname):
@@ -21,7 +25,27 @@ def set_token(response, token_str):
 
 def get_token(request):
     token_str = request.COOKIES.get('access_token')
+    if not token_str:
+        return None
     return token_str
 
 
-# def login(request):
+def check_token(token_str):
+
+    try:
+        payload = jwt.decode(token_str, SECRET_KEY, ALGORITHM)
+        exp = payload.get('exp')
+        if datetime.datetime.utcnow() > exp:
+            return None
+
+        user_nickname = payload['nickname']
+        user_id = payload['id']
+
+        user = Users.objects.filter(pk=user_id, nickname=user_nickname)
+
+    except jwt.exceptions.DecodeError:
+        return None
+    except ObjectDoesNotExist:
+        return None
+
+    return user

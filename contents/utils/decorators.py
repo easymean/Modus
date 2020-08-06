@@ -1,4 +1,3 @@
-import json
 import jwt
 
 from accounts.models import Users
@@ -13,9 +12,10 @@ def login_required(func):
         try:
             token_str = get_token(request)
 
-            user_info = jwt.decode(token_str, SECRET_KEY, ALGORITHM)
-            user_nickname = user_info['nickname']
-            user_id = user_info['id']
+            payload = jwt.decode(token_str, SECRET_KEY, ALGORITHM)
+
+            user_nickname = payload['nickname']
+            user_id = payload['id']
             user = Users.objects.get(
                 pk=user_id, nickname=user_nickname, is_active=True)
 

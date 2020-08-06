@@ -14,7 +14,6 @@ from django.views.generic import View
 from django.shortcuts import redirect, render
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import validate_email, ValidationError
 # Create your views here.
 
@@ -70,7 +69,7 @@ class UserView(BaseView):
 
         try:
             user = Users.objects.get(pk=id, is_active=True)
-        except ObjectDoesNotExist:
+        except Users.DoesNotExist:
             return self.response(message=f'{id}번 유저가 존재하지 않습니다.', status=400)
 
         return self.response({'id': user.pk, 'email': user.email}, 'success', 200)
@@ -116,7 +115,7 @@ class Activate(BaseView):
                 return render(request, 'accounts/signup_success.html')
             return self.response(message='AUTH_FAIL', status=400)
 
-        except ObjectDoesNotExist:
+        except Users.DoesNotExist:
             return self.response(message=f'{id}번 유저가 존재하지 않습니다.', status=400)
         except ValidationError:
             return self.response(message='TYPE_ERROR', status=400)
