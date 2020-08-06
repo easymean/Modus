@@ -4,6 +4,7 @@ from django.db import models
 
 
 class ContentsPosts(models.Model):
+    objects = models.Manager()
     title = models.CharField(
         max_length=500, null=False
     )
@@ -24,6 +25,8 @@ class ContentsPosts(models.Model):
     is_end = models.BooleanField(default=False, null=False)
     is_auth = models.BooleanField(default=False, null=False)
     is_active = models.BooleanField(default=True, null=False)
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now_add=True)
 
 
 class ContentsQuestions(models.Model):
