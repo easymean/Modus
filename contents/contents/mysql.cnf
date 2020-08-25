@@ -1,6 +1,0 @@
-[client]
-database = 'modus_db'
-port = '3306'
-host ='localhost'
-user= 'root'
-password ='1233'
